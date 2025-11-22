@@ -12,6 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-freflection-latest)
 add_compile_options(-std=c++26)
 
+# Ensure that proper RPATH is set during build, so built executable
+# correctly locates custom libc++ libraries
+set(CMAKE_INSTALL_RPATH ${CUSTOM_LIB_PATH})
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
 add_executable(args_reflect src/main.cpp)
 
 target_include_directories(args_reflect PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
