@@ -19,7 +19,10 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 add_executable(args_reflect src/main.cpp)
 
-target_include_directories(args_reflect PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(args_reflect PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/src
+	${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 ## Note: flags are added project-wide via add_compile_options() above. If you
 ## prefer target-local flags, switch these to target_compile_options() instead.

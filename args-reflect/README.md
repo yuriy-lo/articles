@@ -1,23 +1,54 @@
 # args_reflect — minimal C++ CLI app
 
-This repository contains a minimal C++ command-line application and CMake configuration.
-The app simply prints the program name and all arguments it receives.
+This repository contains a small C++ command-line application that demonstrates
+an experimental technique: combining a runtime argument parser with compile-time
+C++26 reflection to dispatch and convert function parameters automatically.
+
+Example usage (command line parameters parsing and dispatching is done
+by ```argparse::run``` function):
+```c++
+#include "argparse.h"
+
+int sum(int x, int y);
+int sqr(int v);
+
+int main(int argc, char *argv[]) {
+    return argparse::run<sum, sqr>(argc, argv);
+}
+```
+```bash
+./build/args_reflect sum --x 1 --y 2
+```
+
+Key points
+- Built for and tested with a clang build that supports P2996 reflection.
+- Uses an internal `parse_cmd` that parses `program command --name value` and
+  `--name=value` forms into a `command` string and a map of parameter name -> value.
+- `parse_cmd` only inserts a parameter when a value is actually provided.
+  Standalone options like `--flag` are skipped by default (not inserted with an
+  empty value).
+- Conversions use `std::string_view` and `std::from_chars` where appropriate
+  for zero-copy parsing (`convert_string<T>(std::string_view)`).
+- The project contains `argparse::get_parameters_values<function>` helper that uses
+  P2996 reflection to build a `std::tuple` of converted parameter values for a reflected
+  function. The `run<...Functions>` template picks a function by its reflected
+  identifier and calls it with typed arguments when parsing succeeds.
+- Program prints no error messages. If program failed to parse parameters
+  then it returns `1`.
 
 Requirements
-- Linux (tested on Ubintu 24.04)
+- Linux (tested on Ubuntu 24.04)
 - CMake >= 3.16
-- A working build tool (Ninja is recommended)
-- Your custom clang/clang++ binaries (the LLVM/Clang fork used for P2996, see
-[Building clang-p2996](#building-clang-p2996)).
+- Ninja (recommended)
+- A clang/clang++ compiler built from the p2996 branch (see [Building clang-p2996](#building-clang-p2996))
 
-## Building a program
+## Building and running
 
-This project always enables the clang P2996 experimental reflection features
-(`-freflection-latest`) and compiles in C++26 mode. It defines necessary
-variables to use custom clang compiler in [toolchain-custom-llvm.cmake](./toolchain-custom-llvm.cmake)
-file.
+The project compiles in C++26 mode and enables experimental reflection. The
+provided `toolchain-custom-llvm.cmake` file helps point CMake to a locally
+built clang/clang++ that supports P2996.
 
-Run the following to build (set `LLVM_INSTALL_PREFIX` to install location of your custom clang build):
+Example build (set `LLVM_INSTALL_PREFIX` to your clang install):
 
 ```bash
 cmake -S . -B build \
@@ -30,12 +61,12 @@ cmake -S . -B build \
 cmake --build build --config Debug
 ```
 
-## Running the program
-
-After a successful build you can run:
+After build, run the executable and pass a command name plus parameters:
 
 ```bash
-./build/args_reflect hello world
+./build/args_reflect sum --x 1 --y 2
+./build/args_reflect sqr --v 2
+./build/args_reflect cat --prefix pre --root condition --suffix al
 ```
 
 ## Building clang-p2996
@@ -66,3 +97,4 @@ cmake --build llvm-build --target install
 
 Notes:
 - Building LLVM/Clang can take a long time and requires significant RAM/CPU.
+- Linux was chosen because libc++ from LLVM project is needed.
