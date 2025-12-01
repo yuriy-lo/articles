@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Understanding Permissive Open Source Licenses for Documentation"
+title: "Command line arguments parsing with C++26 reflection"
 author: "Yuriy Lozhkin"
 date: 2025-11-30 
 categories: 
@@ -11,11 +11,11 @@ tags:
   - api-generation
 ---
 
-# Command line argument parsing with C++26 reflection
+# Command line arguments parsing with C++26 reflection
 
-If you ask Copilot to generate a basic REST server in C++, it will produce times more code than a similar Python example. The difference is boilerplade that registers endpoints and serializes/deserializes arguments. Good news is that C++ voted reflection into draft C++26. So, everything is going to change. The feature is so exciting that I couldn't resist playing with it and implementing something that I really miss in C++ world: automatic command line argument parsing and dispatching.
+If you ask Copilot to generate a basic REST server in C++, it will produce times more code than a similar Python example. The difference is boilerplate that registers endpoints and serializes/deserializes arguments. Good news is that C++ committee voted reflection into draft C++26. So, everything is going to change. The feature is so exciting that I couldn't resist playing with it and implementing something that I miss in C++ world: automatic command line arguments parsing and dispatching.
 
-Imagine, your can write you CLI program like this:
+Imagine, you can write CLI program like this:
 
 ```c++
 #include "argparse.h"
@@ -37,85 +37,85 @@ my_cli sqr --v=3
 
 Looks fantastic, right? Let's see how it works under the hood.
 
-You can find the full code example in [my GitHub repository](https://github.com/yuriy-lo/articles/tree/main/args-reflect). It works on Linux with Clang fork supporting P2996 reflection proposal (see readme on GitHub for instructions how to build).
+You can find the full code example in my [GitHub repository](https://github.com/yuriy-lo/articles/tree/main/args-reflect). It works on Linux with Clang fork supporting P2996 reflection proposal (see readme on GitHub for instructions how to build).
 
 
-```argparse::run``` function is simple: it calls ```argparse::parse_cmd``` to convert ```argc``` and ```argv``` into a map of key-value pairs and then passes result to another ```argparse::run```. ```argparse::parse_cmd``` is an example of what coding agents really excel at.
+```argparse::run``` function is simple: it calls ```argparse::parse_cmd``` to convert ```argc``` and ```argv``` into a map of key-value pairs and then passes result to another ```argparse::run```. ```argparse::parse_cmd``` is an example of what coding agents excel at:
 
 ```c++
-    // Parse command line of the form:
-    //   program command --param1 val1 --param2 val2 ...
-    //   program command --param1=val1 --param2=val2 ...
-    // Values are required
-    std::pair<std::string_view, std::unordered_map<std::string_view, std::string_view>> parse_cmd(int argc, char *argv[]);
+// Parse command line of the form:
+//   program command --param1 val1 --param2 val2 ...
+//   program command --param1=val1 --param2=val2 ...
+// Values are required
+std::pair<std::string_view, std::unordered_map<std::string_view, std::string_view>> parse_cmd(int argc, char *argv[]);
 
-    template <auto... Functions>
-    int run(int argc, char *argv[])
-    {
-        const auto arguments = parse_cmd(argc, argv);
-        return run<Functions...>(arguments.first, arguments.second);
-    }
+template <auto... Functions>
+int run(int argc, char *argv[])
+{
+    const auto arguments = parse_cmd(argc, argv);
+    return run<Functions...>(arguments.first, arguments.second);
+}
 ```
 
 Magic starts here. Another ```argparse::run``` selects a function by name and passes control to it:
 
 ```c++
-    template <auto... Functions>
-    int run(std::string_view command, const std::unordered_map<std::string_view, std::string_view> &params)
+template <auto... Functions>
+int run(std::string_view command, const std::unordered_map<std::string_view, std::string_view> &params)
+{
+    // Create an array of reflected function infos by unpacking functions from template parameters pack 
+    // and calling std::meta::reflect_function on each of them
+    constexpr auto function_infos = std::array{std::meta::reflect_function(*Functions)...};
+    // Iterate through all reflected functions and find one that matches the command name
+    template for (constexpr auto function_info : function_infos)
     {
-        // Create an array of reflected function infos by unpacking functions from template parameters pack 
-        // and calling std::meta::reflect_function on each of them
-        constexpr auto function_infos = std::array{std::meta::reflect_function(*Functions)...};
-        // Iterate through all reflected functions and find one that matches the command name
-        template for (constexpr auto function_info : function_infos)
+        if (std::meta::identifier_of(function_info) == command)
         {
-            if (std::meta::identifier_of(function_info) == command)
+            // Try to get parameter values from the params map and call the function if successful
+            if (auto values = get_parameters_values<function_info>(params))
             {
-                // Try to get parameter values from the params map and call the function if successful
-                if (auto values = get_parameters_values<function_info>(params))
-                {
-                    return std::apply([:function_info:], *values);
-                }
+                return std::apply([:function_info:], *values);
             }
         }
-        return 1;
     }
+    return 1;
+}
 ```
 
-That's really small and intuitively clear! If I wanted to run functions without parameters I could stop here. Just write ```[:function_info:]();``` instead of converting parameters values and calling ```std::apply```. 
+That's small and clear! If I wanted to run functions without parameters I could stop here. Just write ```[:function_info:]();``` instead of converting parameters values and calling ```std::apply```. 
 
-Code snippet above already uses a lot of new C++26 reflection features: ```std::meta::reflect_function``` returns function info, ```std::meta::identifier_of``` returns function name, ```template for``` is an expansion statement which allows compile-time for-loops, ```[: :]``` is a slicer that evaluates callable function from its reflection. ```std::array``` is here because my compiler can't handle ```std::vector``` in compile time. Also there is a lot from C++11 and follow-up standards which make this code possible: variadic templates and parameter packs, list-initialization, range-for, ```std::apply``` to unpack tuple into function parameters, ```constexpr```, ```auto```, ```std::array```, ```std::unordered_map```, ```std::string_view```.
+Code snippet above already uses a lot of new C++26 reflection features: ```std::meta::reflect_function``` returns function info, ```std::meta::identifier_of``` returns function name, ```template for``` is an expansion statement which allows compile-time for-loops, ```[: :]``` is a slicer that evaluates callable function from its reflection. ```std::array``` is here because my compiler can't handle ```std::vector``` in compile time. Also there's a lot from C++11 and follow-up standards which make this code possible: variadic templates and parameter packs, list-initialization, range-for, ```std::apply``` to unpack tuple into function parameters, ```constexpr```, ```auto```, ```std::array```, ```std::unordered_map```, ```std::string_view```.
 
 ```argparse::get_parameters_values``` function is little big bigger. It creates ```std::tuple``` containing values of function parameters by converting them from ```std::string_view``` and returns empty ```std::optional``` if any parameter is missing or can't be converted:
 
 ```c++
-    template <auto Function>
-    auto get_parameters_values(const std::unordered_map<std::string_view, std::string_view> &parameters)
+template <auto Function>
+auto get_parameters_values(const std::unordered_map<std::string_view, std::string_view> &parameters)
+{
+    bool all_params_parsed = true;
+    // Produce a tuple by expanding function parameters reflections and converting each parameter from string
+    auto values = [:__impl::expand(std::meta::parameters_of(Function)):].make_tuple([&]<auto param>
     {
-        bool all_params_parsed = true;
-        // Produce a tuple by expanding function parameters reflections and converting each parameter from string
-        auto values = [:__impl::expand(std::meta::parameters_of(Function)):].make_tuple([&]<auto param>
+        constexpr auto param_name = std::meta::identifier_of(param);
+        auto it = parameters.find(std::string_view(param_name));
+        if (it != parameters.end())
         {
-            constexpr auto param_name = std::meta::identifier_of(param);
-            auto it = parameters.find(std::string_view(param_name));
-            if (it != parameters.end())
+            auto value = convert_string<typename[:std::meta::type_of(param):]>(it->second);
+            if (value)
             {
-                auto value = convert_string<typename[:std::meta::type_of(param):]>(it->second);
-                if (value)
-                {
-                    return *value;
-                }
+                return *value;
             }
-            all_params_parsed = false;
-            // Tuple of correct types is needed in compile time, even if parsing failed
-            return typename[:std::meta::type_of(param):]{};
-        });
-        using Result = std::optional<decltype(values)>;
-        return all_params_parsed ? Result{values} : Result{};
-    }
+        }
+        all_params_parsed = false;
+        // Tuple of correct types is needed in compile time, even if parsing failed
+        return typename[:std::meta::type_of(param):]{};
+    });
+    using Result = std::optional<decltype(values)>;
+    return all_params_parsed ? Result{values} : Result{};
+}
 ```
 
-New reflection features: ```std::meta::parameters_of``` returns a list of function parameters, ```std::meta::type_of``` returns type but ```typename[: :]``` slicer has to be used to use that type. ```__impl::expand``` was inspired by example from C++ proposal paper:
+New reflection features: ```std::meta::parameters_of``` returns a list of function parameters, ```std::meta::type_of``` returns reflection of type and ```typename[: :]``` slicer allows to use that type. ```__impl::expand``` was inspired by example from C++ proposal paper:
 
 ```c++
 template <auto... vals>
@@ -146,35 +146,35 @@ consteval auto expand(R range)
 }
 ```
 
-This snippet introduces more reflections features: ```std::meta::substitute``` creates an instance of a template by substituting its template parameters with values from the ```args``` array, ```^^``` operator produces reflection from grammar construct, ```std::meta::info``` is the reflection datatype. Calling ```std::meta::reflect_constant``` on function parameter reflections and storing results in a vector shouldn't be necessary, but my compiler can't call ```std::meta::substitute``` with output of ```std::meta::parameters_of``` in compile time. Also don't forget about C++11 and later features: lambda functions with template parameters, initializer lists,  ```std::optional```, ```decltype```, ```std::make_tuple```.
+This snippets introduce more reflections features: ```std::meta::substitute``` creates an instance of a template by substituting its template parameters with values from the ```args``` array, ```^^``` operator produces reflection from grammar construct, ```std::meta::info``` is the reflection datatype. Calling ```std::meta::reflect_constant``` on function parameter reflections and storing results in a vector shouldn't be necessary, but my compiler can't call ```std::meta::substitute``` with output of ```std::meta::parameters_of``` in compile time. Also don't forget about C++11 and later features: lambda functions with template parameters, initializer lists,  ```std::optional```, ```decltype```, ```std::make_tuple```.
 
-Finally, we have ```argparse::convert_string``` function that converts string values into required types. One more example of coding agents in action:
+Finally, ```argparse::convert_string``` function converts string values into required types. One more example of coding agents in action:
 
 ```c++
-    template <typename T>
-    std::optional<T> convert_string(std::string_view s);
+template <typename T>
+std::optional<T> convert_string(std::string_view s);
 
-    template <>
-    std::optional<int> convert_string<int>(std::string_view s)
+template <>
+std::optional<int> convert_string<int>(std::string_view s)
+{
+    int result;
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), result);
+    if (ec == std::errc())
     {
-        int result;
-        auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), result);
-        if (ec == std::errc())
-        {
-            return result;
-        }
-        return std::nullopt;
+        return result;
     }
+    return std::nullopt;
+}
 ```
 
-Even here we see C++17 features: ```std::from_chars```, structured bindings, ```std::optional```, ```std::string_view```.
+Even this uses C++17 features: ```std::from_chars```, structured bindings, ```std::optional```, ```std::string_view```.
 
-And that's it! The whole project is about 200 lines of code, half of which is converting ```argc``` and ```argv``` to easy-to-use data structures and converting string values to required types. Sure it misses error logging, help message generation, support for more argument types and value-less command line arguments, default function arguments are not supported by reflections at all, but argument parser library already does the job and demonstrates how powerful C++26 reflection can be. REST APIs generation and serialization/deserialization, automatic binding to scripting languages shouldn't be more difficult to implement.
+And that's it! The whole project is about 200 lines of code, half of which is converting ```argc``` and ```argv``` to easy-to-use data structures and converting string values to required types. Sure it misses error logging, help message generation, support for more argument types and value-less command line arguments, default function arguments are not supported by reflections at all, but argument parser library already does the job and demonstrates how powerful C++26 reflections can be. REST APIs generation, serialization/deserialization, automatic binding to scripting languages shouldn't be more difficult to implement.
 
 ## Summary
 
 * C++26 reflections are already powerful enough to solve real-world tasks. Hope everything will stabilize and become widely available soon.
-* It is time to master all the template and compile time evaluations black magic from C++11 and later standards, because they are essential to use reflections effectively.
+* It's time to master all the template and compile time evaluations black magic from C++11 and later standards, because they are essential to use reflections effectively.
 * Support in compiler and standard library still has a room for improvement. Anyway, I used un-official fork of Clang.
 * Most time-consuming task was to build custom Clang. I failed to build ```libcxx``` target on Windows, to build on WSL2 required increase of VM memory to 12GB. And build of Clang takes LONG.
 
