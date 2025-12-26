@@ -13,6 +13,30 @@ layout: null
     header{margin-bottom:1rem; border-bottom:1px solid #eee; padding-bottom:0.5rem}
     article h1{margin-top:0}
     footer{margin-top:2rem; color:#666; font-size:0.9rem}
+    /* Code block styling for syntax highlighting (Rouge output) */
+    pre, code {font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace}
+    /* Inline code (small snippets) */
+    :not(pre) > code {background:#f6f8fa; padding:0.15rem 0.35rem; border-radius:4px}
+    /* Block code: make pre a single styled container; inner code should be transparent */
+    pre {background:#0d1117; color:#c9d1d9; padding:1rem; border-radius:6px; overflow:auto}
+    pre code {background: transparent; padding: 0;}
+    .highlight { background: transparent }
+    .highlight pre { background: inherit; color: inherit }
+    .highlight .lineno { color: #6a737d; padding-right:0.75rem }
+
+  /* VS Code Light-ish token colors (approximation) */
+  .highlight .c { color: #6a9955 } /* comment (greenish) */
+  .highlight .k { color: #0000ff } /* keyword (blue) */
+  .highlight .kc { color: #0000ff }
+  .highlight .kd { color: #0000ff }
+  .highlight .kn { color: #0000ff }
+  .highlight .kr { color: #0000ff }
+  .highlight .nf, .highlight .nn { color: #795e26 } /* name/function (brown-ish) */
+  .highlight .na { color: #795e26 }
+  .highlight .nb, .highlight .m { color: #098658 } /* numbers (green) */
+  .highlight .s { color: #a31515 } /* string (red) */
+  .highlight .p { color: #333333 } /* punctuation */
+  .highlight .kt, .highlight .ktb { color: #267f99 } /* types */
   </style>
 </head>
 <body>
