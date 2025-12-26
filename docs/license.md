@@ -1,6 +1,12 @@
+---
+layout: page
+title: "License"
+permalink: /license.html
+---
+
 MIT License
 
-Copyright (c) 2025
+Copyright (c) 2025 Yuriy Lozhkin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

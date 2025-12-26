@@ -16,6 +16,6 @@ permalink: /
 
 ## License
 
-This site and the example code are licensed under the MIT License. See the [LICENSE](./LICENSE) file in the repository for details.
+This site and the example code are licensed under the MIT License. See the [LICENSE]({{ '/license.html' | relative_url }}) file for details.
 
 
