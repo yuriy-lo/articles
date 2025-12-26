@@ -11,8 +11,6 @@ tags:
   - api-generation
 ---
 
-# Command line arguments parsing with C++26 reflection
-
 If you ask Copilot to generate a basic REST server in C++, it will produce times more code than a similar Python example. The difference is boilerplate that registers endpoints and serializes/deserializes arguments. Good news is that C++ committee voted reflection into draft C++26. So, everything is going to change. The feature is so exciting that I couldn't resist playing with it and implementing something that I miss in C++ world: automatic command line arguments parsing and dispatching.
 
 Imagine, you can write CLI program like this:
