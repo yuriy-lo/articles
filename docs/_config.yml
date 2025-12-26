@@ -1,0 +1,17 @@
+title: Articles
+author: "Yuriy Lozhkin"
+timezone: Etc/UTC
+url: ""
+baseurl: ""
+markdown: kramdown
+
+# Build settings
+safe: true
+
+# Optional: set defaults for posts if you want
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
