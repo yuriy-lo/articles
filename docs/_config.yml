@@ -2,7 +2,7 @@ title: Articles
 author: "Yuriy Lozhkin"
 timezone: Etc/UTC
 url: ""
-baseurl: ""
+baseurl: "/articles"
 markdown: kramdown
 
 # Build settings
