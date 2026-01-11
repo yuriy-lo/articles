@@ -1,6 +1,6 @@
 # Articles & Projects
 
-This repository contains various articles and projects exploring programming concepts and techniques.
+This repository contains example code for published articles that explore programming concepts and techniques.
 
 ## Projects
 
